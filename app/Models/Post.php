@@ -2,50 +2,56 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\File;
-use Spatie\YamlFrontMatter\YamlFrontMatter;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
+class Post extends Model
+{
+    use HasFactory;
 
-class Post 
-{   
-    public $title;
-    public $slug;
-    public $intro;
-    public $body;
-    public $date;
+    protected $with=['category','user'];
 
-    public function __construct($title, $slug, $intro, $body, $date)
-    {
-        $this->title=$title;
-        $this->slug=$slug;
-        $this->intro=$intro;
-        $this->body=$body;
-        $this->date=$date;
-    }
-
-    public static function all()
+    public function scopeFilter($query,$filter)//Post::lastest()->filter()
     {   
-        
-        return collect(File::files(resource_path("posts")))
-            ->map(function($file){
-                $obj = YamlFrontMatter::parseFile($file);
-                return new Post($obj->title, $obj->slug, $obj->intro, $obj->body(), $obj->date);
-            })
-            ->sortByDesc('date');
-            
 
-        // return array_map(function($file){
-
-        //     $obj = YamlFrontMatter::parseFile($file);
-        //     return new Post($obj->title, $obj->slug, $obj->intro, $obj->body());
-
-        // },$files);
-        
+        $query->when($filter['search']??false,function($query,$search){
+            $query->where(function($query)use($search){
+                $query->where('title','LIKE','%'.$search.'%')
+                    ->orWhere('body','LIKE','%'.$search.'%');
+            });
+        });
+        $query->when($filter['category']??false,function($query,$slug){
+            $query->whereHas('category',function($query)use($slug){
+                $query->where('slug',$slug);
+            });
+        });
+        $query->when($filter['username']??false,function($query,$username){
+            $query->whereHas('user',function($query)use($username){
+                $query->where('username',$username);
+            });
+        });
     }
 
-    public static function find($slug)
+    public function category(){
+        return $this->belongsTo(category::class);
+    }
+
+    public function user(){
+        return $this->belongsTo(User::class);
+    }
+
+    public function comments(){
+        return $this->hasMany(Comment::class);
+    }
+    public function subscribers(){
+        return $this->belongsToMany(User::class);
+    }
+    public function unSubscribe()
     {
-        $posts=static :: all();
-        return $posts->firstWhere('slug',$slug);
+         $this->subscribers()->detach(auth()->id());
+    }
+    public function subscribe()
+    {
+         $this->subscribers()->attach(auth()->id());
     }
 }

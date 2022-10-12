@@ -17,11 +17,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+ 
 
     /**
      * The attributes that should be hidden for serialization.
@@ -41,4 +37,21 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    
+    public function posts(){
+        return $this->hasMany(Post::class);
+    }
+    
+    public function getNameAttribute($value){
+            return ucwords($value);
+    }
+    public function setPasswordAttribute($value){
+       $this->attributes['password']=bcrypt($value);
+    }
+    public function subscriberPosts(){
+        return $this->belongsToMany(Post::class);
+    }
+    public function isSubscribed($post){
+        return auth()->user()->subscriberPosts && auth()->user()->subscriberPosts->contains('id',$post->id);
+    }
 }
