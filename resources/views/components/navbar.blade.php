@@ -5,7 +5,7 @@
         <a href="/#blogs" class="nav-link">Blogs</a>
         @auth
         @can('admin')
-        <a href="/admin/posts" class="nav-link">Dashboard</a>
+        <a href="/admin/posts" class="nav-link">dashboard</a>
         @endcan
         <img src="{{auth()->user()->avator}}" alt="" width="50" height="50" class="rounded-circle">
         <a href="" class="nav-link">{{auth()->user()->name}}</a>
